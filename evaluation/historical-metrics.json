@@ -1,0 +1,169 @@
+{
+  "description": "历史结果的白名单字段摘录；不含小说正文、匹配引文或建议。源文件 SHA-256 用于标识本地原件，不代表公开了原件或独立质量验证。",
+  "runs": [
+    {
+      "source_file": "fast.json",
+      "source_sha256": "52cb4ec437b816b457baa9db01bbaf037280b8caa0e2af0fbb0ef96563ea8268",
+      "query": "主角深夜独自收到一条坏消息，愣在原地，想哭却哭不出来，只能反复深呼吸强压情绪",
+      "expanded": "为这个句子生成表示以用于检索相关文章:主角深夜独自收到一条坏消息，愣在原地，想哭却哭不出来，只能反复深呼吸强压情绪",
+      "mode": "instruction",
+      "count": 3,
+      "results": [
+        {
+          "chapter": "第0833章 李乐平的电话",
+          "score": 0.6017,
+          "technique": "动作停顿与对话并置"
+        },
+        {
+          "chapter": "第1032章 信使间的会面",
+          "score": 0.5898,
+          "technique": "内外反差与家庭羁绊"
+        },
+        {
+          "chapter": "第1027章 异动",
+          "score": 0.5946,
+          "technique": "生理细节与心理独白"
+        }
+      ]
+    },
+    {
+      "source_file": "refine_local.json",
+      "source_sha256": "9d9069caad477aa65ccf9ba6702836018d270a32f77869e24f3df9930bbe24b4",
+      "status": "done",
+      "query": "主角深夜独自收到一条坏消息，愣在原地，想哭却哭不出来，只能反复深呼吸强压情绪",
+      "mode": "iterative",
+      "rounds": 1,
+      "confirmed": 0,
+      "count": 0,
+      "results": []
+    },
+    {
+      "source_file": "refine_ds.json",
+      "source_sha256": "9d9069caad477aa65ccf9ba6702836018d270a32f77869e24f3df9930bbe24b4",
+      "status": "done",
+      "query": "主角深夜独自收到一条坏消息，愣在原地，想哭却哭不出来，只能反复深呼吸强压情绪",
+      "mode": "iterative",
+      "rounds": 1,
+      "confirmed": 0,
+      "count": 0,
+      "results": []
+    },
+    {
+      "source_file": "deep.json",
+      "source_sha256": "7258dc53f9f7b442c9a5d8126d6b8cd0c0f298c450631f270ea5511b67ba93cc",
+      "status": "done",
+      "query": "主角深夜独自收到一条坏消息，愣在原地，想哭却哭不出来，只能反复深呼吸强压情绪",
+      "mode": "deep",
+      "rounds": 2,
+      "confirmed": 0,
+      "count": 0,
+      "results": [],
+      "history": [
+        {
+          "round": 1,
+          "new": 0,
+          "improved": false,
+          "best_chapter": ""
+        },
+        {
+          "round": 2,
+          "new": 0,
+          "improved": false,
+          "best_chapter": ""
+        }
+      ]
+    },
+    {
+      "source_file": "deep_retry2.json",
+      "source_sha256": "3ae952ecb33170754ca76bc7402bbc2fb109bba71e9eb3688c4d38f48f6f3873",
+      "status": "done",
+      "query": "主角深夜独自收到一条坏消息，愣在原地，想哭却哭不出来，只能反复深呼吸强压情绪",
+      "mode": "deep",
+      "rounds": 5,
+      "confirmed": 10,
+      "count": 3,
+      "results": [
+        {
+          "chapter": "第0024章 登录网站",
+          "score": 0.4463,
+          "llm_score": 5,
+          "technique": "动作与心理穿插写压抑"
+        },
+        {
+          "chapter": "第1074章 夜话",
+          "score": 0.4866,
+          "llm_score": 5,
+          "technique": "留白与内心独白"
+        },
+        {
+          "chapter": "第0853章 意识的侵蚀",
+          "score": 0.4608,
+          "llm_score": 5,
+          "technique": "直白心理剖白"
+        }
+      ],
+      "history": [
+        {
+          "round": 1,
+          "new": 0,
+          "improved": false,
+          "best_chapter": ""
+        },
+        {
+          "round": 2,
+          "new": 3,
+          "improved": true,
+          "best_chapter": "第0864章 迟来的短信"
+        },
+        {
+          "round": 3,
+          "new": 3,
+          "improved": false,
+          "best_chapter": "第0864章 迟来的短信"
+        },
+        {
+          "round": 4,
+          "new": 1,
+          "improved": false,
+          "best_chapter": "第0864章 迟来的短信"
+        },
+        {
+          "round": 5,
+          "new": 3,
+          "improved": false,
+          "best_chapter": "第0864章 迟来的短信"
+        }
+      ]
+    },
+    {
+      "source_file": "refine_scene.json",
+      "source_sha256": "fea781857e98e43a685fb7982d4b342d74fb71b16e4c087ae650d2cf1a04f661",
+      "status": "done",
+      "query": "深夜独处的出租屋里，他收到一条短信，读完整个人僵在原地，喉头发紧，想哭却哭不出来，只能一遍遍深呼吸强压翻涌的情绪",
+      "mode": "iterative",
+      "rounds": 2,
+      "confirmed": 3,
+      "count": 3,
+      "results": [
+        {
+          "chapter": "第0864章 迟来的短信",
+          "score": 0.5554,
+          "llm_score": 5,
+          "technique": "生理描写+环境烘托"
+        },
+        {
+          "chapter": "第0690章 涌来的凶险",
+          "score": 0.5331,
+          "llm_score": 4,
+          "technique": "心理与动作描写"
+        },
+        {
+          "chapter": "第0823章 信纸",
+          "score": 0.5395,
+          "llm_score": 5,
+          "technique": "对话与场景描写"
+        }
+      ]
+    }
+  ]
+}

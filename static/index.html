@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小说创作工作台</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>小说创作工作台</h1>
+      <span class="tag">本地创作与范本学习</span>
+    </div>
+    <button id="open-onboarding" type="button" class="ghost">入门引导</button>
+    <div id="status" class="status">检查服务中…</div>
+  </header>
+
+  <nav class="app-nav" id="app-nav">
+    <button data-page="home" class="active">首页</button>
+    <button data-page="workbench">创作工作台</button>
+    <button data-page="search">独立范本检索</button>
+    <button data-page="projects">我的小说</button>
+    <button data-page="knowledge">小说知识库</button>
+    <button data-page="references">参考范本库</button>
+    <button data-page="settings">设置</button>
+  </nav>
+
+  <main id="app-main">
+    <section id="page-home" class="app-page">
+      <div class="hero-card">
+        <div class="eyebrow">小说创作工作台</div>
+        <h2>从本作事实出发，再向范本学习怎么写</h2>
+        <p>你可以导入已有小说继续创作，也可以从空白第一章开始；如果只想找写法，直接使用独立范本检索。</p>
+      </div>
+      <div class="entry-grid">
+        <button class="entry-card" data-entry="continue"><span>继续已有小说</span><small>导入全文，建立带原文依据的剧情索引、人物与设定知识库</small></button>
+        <button class="entry-card" data-entry="new"><span>开始新小说</span><small>创建空项目，从第一章逐步积累本作知识</small></button>
+        <button class="entry-card" data-entry="search"><span>只查询范本</span><small>不创建项目，直接输入需求并多选范本</small></button>
+      </div>
+      <div class="card"><div class="card-head"><h2>最近项目</h2></div><div id="home-projects" class="project-cards"></div></div>
+    </section>
+
+    <section id="page-workbench" class="app-page hidden">
+      <div class="workspace-topbar card">
+        <label class="field"><span>正在创作</span><select id="workspace-project"></select></label>
+        <label class="field"><span>当前章节</span><select id="workspace-chapter"></select></label>
+        <div id="workspace-kb-state" class="status-pill">请选择项目</div>
+      </div>
+      <div class="card context-card">
+        <div class="card-head"><h2>本作相关依据</h2><button id="toggle-context" class="ghost">展开依据</button></div>
+        <div id="workspace-context-summary" class="hint">分析原稿时将自动查询本作前情；空项目不会虚构历史。</div>
+        <div id="workspace-context-detail" class="context-evidence hidden"></div>
+      </div>
+      <div id="draft-mount"></div>
+      <div id="workbench-result-mount"></div>
+    </section>
+
+    <section id="page-search" class="app-page hidden">
+      <div class="page-title"><h2>独立范本检索</h2><p>无需创建小说项目。先在“参考范本库”上传并勾选一本或多本范本。</p></div>
+      <div id="search-mount"></div>
+      <div id="search-result-mount"></div>
+    </section>
+
+    <section id="page-projects" class="app-page hidden">
+      <div class="page-title"><h2>我的小说</h2><p>正文自动保存在本地；只有点击更新知识库时才会调用AI。</p></div>
+      <div class="project-layout">
+        <aside class="card project-sidebar">
+          <button id="new-project-btn" class="primary">新建小说</button>
+          <div id="project-list" class="project-list"></div>
+          <div id="chapter-nav" class="project-list"></div>
+        </aside>
+        <div class="project-editor-column">
+          <div id="project-create-panel" class="card hidden">
+            <div class="card-head"><h2>新建创作项目</h2><button id="cancel-project-create" class="ghost">取消</button></div>
+            <label class="field"><span>创建方式</span><select id="project-create-kind"><option value="new">从零开始创作</option><option value="import">导入已有小说</option></select></label>
+            <label class="field"><span>项目名称 *</span><input id="project-name" placeholder="小说名称"></label>
+            <label class="field"><span>故事概念（可选）</span><textarea id="project-concept" rows="3"></textarea></label>
+            <label class="field"><span>主要人物（可选）</span><textarea id="project-characters" rows="3"></textarea></label>
+            <label class="field"><span>初始世界观（可选）</span><textarea id="project-world" rows="3"></textarea></label>
+            <label class="field"><span>风格与限制（可选）</span><textarea id="project-style" rows="2"></textarea></label>
+            <label class="field"><span>当前想写的场景（可选）</span><textarea id="project-goal" rows="2"></textarea></label>
+            <div class="row"><span id="project-create-hint" class="hint"></span><button id="create-project-submit" class="primary">创建空项目</button></div>
+          </div>
+          <div id="project-editor" class="card hidden">
+            <div class="editor-toolbar">
+              <select id="editor-chapter"></select>
+              <button id="add-chapter-btn" class="ghost">新增章节</button>
+              <button id="move-chapter-up" class="ghost">上移</button>
+              <button id="move-chapter-down" class="ghost">下移</button>
+              <button id="split-chapter-btn" class="ghost">从光标拆章</button>
+              <button id="merge-chapter-btn" class="ghost">与下一章合并</button>
+              <button id="delete-chapter-btn" class="ghost danger">删除章节</button>
+              <span id="chapter-save-state" class="hint">已保存</span>
+            </div>
+            <input id="chapter-title" class="chapter-title-input" placeholder="章节标题">
+            <textarea id="chapter-editor-text" rows="24" placeholder="从这里开始写第一章……"></textarea>
+            <div class="row editor-actions">
+              <div class="btn-group">
+                <button id="analyze-selection-btn" class="ghost">分析选中文字</button>
+                <button id="analyze-paragraph-btn" class="ghost">分析光标所在段落</button>
+                <button id="analyze-chapter-btn" class="primary">分析当前章节</button>
+              </div>
+              <label class="file-button ghost">导入全文<input id="project-import-file" type="file" accept=".txt,.epub" hidden></label>
+              <button id="delete-project-btn" class="ghost danger">删除本项目</button>
+            </div>
+            <div id="project-editor-hint" class="hint"></div>
+            <details id="chapter-version-panel" class="chapter-version-panel">
+              <summary>旧版本与修改影响</summary>
+              <div class="chapter-version-controls">
+                <select id="chapter-version-select"><option value="">尚无旧版本</option></select>
+                <button id="compare-chapter-version" class="ghost">对比所选版本</button>
+                <button id="refresh-chapter-versions" class="ghost">刷新</button>
+              </div>
+              <div id="chapter-version-hint" class="hint">修改章节后，覆盖前的正文会保留在这里。</div>
+              <div id="chapter-version-result" class="hidden"></div>
+            </details>
+            <details class="project-settings-panel">
+              <summary>编辑本作初始设定</summary>
+              <div class="settings-grid">
+                <label class="field"><span>小说名称</span><input id="meta-project-name"></label>
+                <label class="field"><span>故事概念</span><textarea id="meta-project-concept" rows="2"></textarea></label>
+                <label class="field"><span>主要人物</span><textarea id="meta-project-characters" rows="2"></textarea></label>
+                <label class="field"><span>世界观</span><textarea id="meta-project-world" rows="2"></textarea></label>
+                <label class="field"><span>风格与限制</span><textarea id="meta-project-style" rows="2"></textarea></label>
+                <label class="field"><span>当前想写的场景</span><textarea id="meta-project-goal" rows="2"></textarea></label>
+              </div>
+              <button id="save-project-meta" class="ghost">保存初始设定</button>
+            </details>
+            <details class="project-notes-panel">
+              <summary>查看保存的范本检索记录</summary>
+              <div id="project-notes" class="project-notes"><div class="empty-note">还没有保存记录。</div></div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-knowledge" class="app-page hidden">
+      <div class="page-title"><h2>小说知识库</h2><p>剧情保存为可人工核对的事件概括，并附多段原文依据；未经核对的概括不会作为确定事实供AI使用。</p></div>
+      <div class="card knowledge-controls">
+        <label class="field"><span>创作项目</span><select id="knowledge-project"></select></label>
+        <label class="field"><span>建立方式</span><select id="knowledge-mode"><option value="auto">自动建立</option><option value="guided">逐步确认</option></select></label>
+        <label class="field"><span>目标字数（仅辅助选章）</span><input id="knowledge-target" type="number" value="2000" min="500" max="300000"></label>
+        <button id="knowledge-select-by-target" class="ghost">按目标字数勾选</button>
+        <div id="knowledge-chapter-picker" class="knowledge-chapter-picker">
+          <div class="row">
+            <label class="field"><span>从哪一章开始选</span><select id="knowledge-start-chapter"></select></label>
+            <button id="knowledge-select-pending" class="ghost">勾选此处之后待更新章节</button>
+            <button id="knowledge-select-all" class="ghost">勾选此处之后全部章节</button>
+            <button id="knowledge-clear-selection" class="ghost">清空勾选</button>
+          </div>
+          <p class="hint">修改起始章节或目标字数不会自动改变勾选。勾选可用于建立知识库、自动合并或检查遗漏。已建立章节也可勾选；空章节和超过当前分析模型安全上限的单章不可勾选。</p>
+          <div id="knowledge-chapter-options" class="knowledge-chapter-options"></div>
+          <div id="knowledge-selection-summary" class="hint" aria-live="polite">尚未勾选章节。</div>
+          <details><summary>查看本次勾选章节</summary><ul id="knowledge-selected-preview"></ul></details>
+          <p class="hint" id="knowledge-batch-limit-hint">建立知识库时只处理最终勾选章节，并按完整章节分批。逐步确认模式一次处理一批，确认后剩余勾选保留，点击建立继续。</p>
+        </div>
+        <button id="build-knowledge-btn" class="primary" disabled>为勾选章节建立知识库</button>
+        <button id="knowledge-accept-existing" class="ghost" disabled>沿用现有知识，标记为已建立</button>
+        <button id="stop-knowledge-btn" class="ghost">当前批次后暂停</button>
+        <button id="knowledge-repair-index" class="ghost">仅更新向量索引</button>
+        <button id="open-knowledge-ai-runs" class="ghost">查看 AI 运行记录</button>
+        <label class="hint"><input id="knowledge-keep-context" type="checkbox" checked> 连续整理：保留本小说的上下文</label>
+        <span id="knowledge-hint" class="hint"></span>
+        <div id="knowledge-progress" class="progress hidden"><div class="progress-bar"><div id="knowledge-bar" class="progress-fill"></div></div><div id="knowledge-progress-text" class="progress-text"></div></div>
+      </div>
+      <div id="knowledge-review" class="card hidden"></div>
+      <section id="knowledge-memory-panel" class="card">
+        <h2>整理记忆与基础设定</h2>
+        <p id="knowledge-session-status" class="hint">选择小说后查看整理会话。</p>
+        <p id="knowledge-reading-session-status" class="hint">合并与查漏的本作阅读会话尚未建立。</p>
+        <p class="hint">会话保存在本地，连续整理时按原样追加。缓存由模型服务商决定；长时间间隔、上下文过长或来源变更时会开启新会话。</p>
+        <div class="row"><button id="knowledge-reset-session" class="ghost" disabled>下次使用新会话</button><button id="knowledge-suggest-settings" class="primary" disabled>从已有知识提炼初始设定</button></div>
+        <p class="hint">只提炼故事简介、主要人物和世界观，先预览再确认；不自动覆盖手填设定。不需要发送小说全文，生成建议会调用一次分析模型。</p>
+        <p id="knowledge-settings-status" class="hint" aria-live="polite"></p>
+        <div id="knowledge-settings-progress" class="progress hidden"><div class="progress-bar"><div id="knowledge-settings-bar" class="progress-fill"></div></div><div id="knowledge-settings-progress-text" class="progress-text"></div></div>
+        <div id="knowledge-settings-proposal" class="hidden"></div>
+      </section>
+      <section class="card knowledge-search-panel">
+        <label class="field"><span>搜索整个小说知识库</span><input id="knowledge-global-search" type="search" placeholder="搜索剧情、人物、能力、名词、世界观、原文依据……" autocomplete="off"></label>
+        <button id="open-manual-knowledge" class="primary">手动新增卡片</button>
+        <button id="open-knowledge-graph" class="primary">可视化编辑</button>
+        <button id="clear-knowledge-search" class="ghost" disabled>清空搜索</button>
+        <p id="knowledge-search-status" class="hint" aria-live="polite">输入关键词可同时搜索剧情事件索引、原文依据和知识卡片；搜索过程中已勾选的合并卡片会保留。</p>
+      </section>
+      <section id="manual-knowledge-form" class="card hidden">
+        <div class="card-head"><h2>手动新增知识卡片</h2><button id="cancel-manual-knowledge" class="ghost">关闭</button></div>
+        <p class="hint">可以完全手填；也可以只输入名称，让AI检索本作已有知识和相关原文后填成草稿。AI不会直接保存，也不会与同名卡片自动合并。</p>
+        <div class="row">
+          <label class="field"><span>卡片类型</span><select id="manual-knowledge-type"><option value="character">人物</option><option value="relationship">关系</option><option value="term">名词</option><option value="world">世界观</option><option value="scene">场景</option><option value="clue">伏笔</option></select></label>
+          <div class="field manual-source-picker"><span>来源章节（可选，可连续勾选）</span>
+            <input id="manual-knowledge-source-search" type="search" aria-label="搜索来源章节" placeholder="搜索章节名称或序号">
+            <div class="row"><button id="manual-source-select-results" class="ghost" type="button">全选当前结果</button><button id="manual-source-clear" class="ghost" type="button">清空选择</button><span id="manual-source-count" class="hint" aria-live="polite"></span></div>
+            <div id="manual-knowledge-chapter" class="manual-source-list" role="group" aria-label="可多选的来源章节"></div>
+            <small class="hint">可逐章勾选；按住 Shift 点击另一章，可连续选择当前结果中的一段。搜索不会清除已选章节。</small>
+          </div>
+        </div>
+        <div id="manual-knowledge-sources" class="manual-knowledge-sources hidden" aria-live="polite"></div>
+        <div class="row manual-knowledge-autofill-row">
+          <label class="field"><span>名称</span><input id="manual-knowledge-title" maxlength="300" placeholder="例如：灵车、林朔、灵车乘车规则"></label>
+          <button id="autofill-manual-knowledge" class="ghost" type="button">AI搜索并填充</button>
+        </div>
+        <p id="manual-autofill-scope" class="hint" aria-live="polite">未选择来源章节：AI将检索全书已有知识和原文。</p>
+        <label class="field"><span>内容</span><textarea id="manual-knowledge-summary" rows="4" maxlength="4000" placeholder="只填写一项相对独立的知识；另一项请另建卡片"></textarea></label>
+        <label class="field"><span>来源原文（可选；多段之间空一行，每段最多800字）</span><textarea id="manual-knowledge-quotes" rows="5" placeholder="选择来源章节后，可以粘贴支持这张卡片的原文"></textarea></label>
+        <div class="row"><button id="optimize-manual-knowledge-quotes" class="ghost" type="button">AI优化引文</button><span class="hint">只精简逐字依据，不会修改名称和内容；结果在保存卡片前仍可编辑。</span></div>
+        <div class="row"><button id="save-manual-knowledge" class="primary">保存卡片</button><span id="manual-knowledge-status" class="hint" aria-live="polite"></span></div>
+      </section>
+      <nav id="knowledge-sections" class="card row" aria-label="知识库分区"><button class="active" data-ksection="entity">实体</button><button data-ksection="plot">剧情</button><button data-ksection="world">世界观</button></nav>
+      <section id="clue-tools" class="card hidden">
+        <div class="row"><button id="match-clues" class="ghost">一键匹配已有伏笔</button><button id="check-clues" class="primary">检查勾选章节中的伏笔进展</button><button id="stop-clue-check" class="ghost">当前批次后暂停</button></div>
+        <div class="row"><label>伏笔状态 <select id="clue-status-filter"><option value="">全部状态</option><option value="unknown">未确认</option><option value="open">未回收</option><option value="partial">部分回收</option><option value="resolved">已回收</option></select></label><label><input type="checkbox" id="clue-only-events"> 只显示有关联伏笔的事件</label></div>
+        <p id="clue-operation-status" class="hint" aria-live="polite"></p><div id="clue-jobs"></div>
+        <div id="clue-suggestions"></div>
+        <details open><summary>待关联伏笔 <span id="unlinked-clue-count"></span></summary><div id="unlinked-clues"></div></details>
+      </section>
+      <section id="plot-index-panel" class="card hidden">
+        <div class="card-head"><h2>剧情事件索引</h2><div class="row"><span id="plot-index-count" class="hint">0 个事件</span><button id="toggle-plot-index" class="ghost" aria-expanded="true" aria-controls="plot-index-content">收起</button></div></div>
+        <div id="plot-index-content">
+          <p id="plot-coverage-status" class="hint">按原文顺序记录剧情概括；每条都保留可展开的原文依据，未经人工核对的概括不会作为后续判断依据。</p>
+          <div id="plot-index-list" class="plot-index-list"><div class="empty-note">选择小说后查看剧情事件索引。</div></div>
+        </div>
+      </section>
+      <div class="knowledge-filter card"><span class="hint knowledge-filter-title">知识卡片</span><button data-ktype="" class="active">全部</button><button data-ktype="character">人物</button><button data-ktype="relationship">关系</button><button data-ktype="term">名词</button><button data-ktype="world">世界观</button><button data-ktype="scene">场景</button><button data-ktype="clue">伏笔</button></div>
+      <section class="card" id="knowledge-tools-panel">
+        <h2>知识整理工具</h2>
+        <div class="row auto-merge-controls">
+          <button id="auto-merge-knowledge" class="primary" disabled>依据勾选章节自动合并（0）</button>
+          <label>每次最多 <input id="auto-merge-limit" type="number" min="1" max="20" value="5" style="width:75px"> 组</label>
+          <label><input id="auto-merge-apply" type="checkbox"> 生成后直接合并（可撤销）</label>
+          <button id="stop-auto-merge" class="ghost" disabled>停止自动合并</button>
+        </div>
+        <p class="hint">先在页面上方勾选作为判断依据的章节。AI会通读勾选章节全文，再从全库卡片中识别重复、阶段变化及被后文确认或否定的早期判断。默认先看草稿；剧情事件索引不参与卡片合并。</p>
+        <label id="merge-queue-field" class="field hidden"><span>待确认的合并草稿</span><select id="merge-queue"></select></label>
+        <div class="row"><button id="merge-knowledge-selected" class="ghost" disabled>合并勾选卡片（0）</button><button id="clear-merge-selection" class="ghost">清空卡片勾选</button></div>
+        <p class="hint">使用上方“搜索整个小说知识库”寻找候选，再在结果中勾选2～12张相关卡片；切换关键词不会清空已勾选项。先生成合并草稿，再确认。原卡片和全部出处保留，可撤销合并。</p>
+        <div class="row"><button id="start-selected-knowledge-audit" class="primary" disabled>检查勾选章节（0）</button><button id="start-knowledge-audit" class="ghost" disabled>检查全文中的知识遗漏</button><button id="continue-knowledge-audit" class="ghost hidden" disabled>继续上次检查</button><button id="restart-knowledge-audit" class="ghost hidden" disabled>重新检查本范围</button><button id="stop-knowledge-audit" class="ghost">当前批次后暂停检查</button></div>
+        <p class="hint" id="knowledge-audit-selection-hint">使用上方章节列表的勾选，支持不连续章节；不勾选不会检查全文。</p>
+        <button id="clear-knowledge-audit" class="ghost danger hidden">清空查漏报告</button>
+        <div id="clear-audit-confirm" class="hidden"><p>清空本小说的查漏报告及续查进度，旧报告在本地归档。正文、知识卡片和已补入内容不受影响。运行中的检查请先暂停。</p><button id="confirm-clear-audit" class="ghost danger">确认清空报告</button><button id="cancel-clear-audit" class="ghost">取消</button></div>
+        <p class="hint">按完整章节逐批调用分析模型，会产生额外费用。只报告疑似遗漏及原文依据，不自动补入，不保证找出全部遗漏。检查进度保存在本地。</p>
+        <div id="audit-restart-confirm" class="hidden"><p id="audit-restart-message"></p><button class="primary" id="confirm-restart-audit">确认开始检查</button><button class="ghost" id="cancel-restart-audit">取消</button></div>
+        <p id="knowledge-tools-status" class="hint" aria-live="polite"></p>
+        <div id="knowledge-tools-progress" class="progress hidden"><div class="progress-bar"><div id="knowledge-tools-bar" class="progress-fill"></div></div><div id="knowledge-tools-progress-text" class="progress-text"></div></div>
+        <div id="knowledge-merge-preview" class="hidden"></div>
+        <details id="knowledge-merge-history" class="hidden"><summary>已完成的合并记录</summary><p class="hint">合并卡片未被编辑、删除或再次合并时，可以撤销。嵌套合并请先撤销最近一次。</p><div></div></details>
+        <div id="knowledge-audit-report" class="hidden"></div>
+      </section>
+      <div id="knowledge-list" class="knowledge-list"></div>
+      <details id="knowledge-trash" class="card hidden">
+        <summary>已删除的知识卡片（<span id="knowledge-trash-count">0</span>）</summary>
+        <p class="hint">删除不会改动小说正文；这些条目不再参与知识检索，可以随时恢复。</p>
+        <div id="knowledge-trash-list"></div>
+      </details>
+    </section>
+
+    <section id="page-references" class="app-page hidden">
+      <div class="page-title"><h2>参考范本库</h2><p>勾选的范本会同时参与检索；“使用中”仅兼容旧的单范本流程。</p></div>
+      <div class="row"><span class="hint">勾选只影响本次检索；需要长期使用时可另存为项目默认。</span><button id="save-default-references" class="ghost">保存为本作默认范本</button></div>
+      <div id="reference-mount"></div>
+    </section>
+
+    <section id="page-settings" class="app-page hidden">
+      <div id="settings-mount"></div>
+      <section id="prompt-settings" class="card">
+        <h2>AI 提示词与方案</h2>
+        <p class="hint">集中管理原稿分析、知识整理、前情查询和范本检索的全部提示词。方案仅保存模板，不保存正文或密钥；模型地址仍使用上方设置。</p>
+        <div class="row">
+          <label class="field"><span>已保存方案</span><select id="prompt-preset"></select></label>
+          <button id="prompt-switch" class="ghost">启用所选方案</button>
+          <button id="prompt-delete" class="danger-btn">删除所选方案</button>
+          <button id="prompt-reload" class="ghost">重新加载</button>
+        </div>
+        <div class="row">
+          <label class="field"><span>方案名称</span><input id="prompt-name" maxlength="80" placeholder="例如：侧重人物描写"></label>
+          <button id="prompt-save" class="primary">保存并启用</button>
+          <button id="prompt-save-as" class="ghost">另存为新方案并启用</button>
+        </div>
+        <p id="prompt-status" class="hint" role="status">正在加载提示词…</p>
+        <div id="prompt-confirm" class="hidden"><p id="prompt-confirm-text"></p><button id="prompt-confirm-yes" class="danger-btn">确认</button><button id="prompt-confirm-no" class="ghost">取消</button></div>
+        <p class="hint">修改后必须保存才会生效。运行中的任务继续使用启动时的方案；新任务使用新方案。原稿旧会话不改写历史系统消息，需重新分析以完整使用新方案；知识整理会在方案变化后开启新会话。</p>
+        <div class="row"><label class="field"><span>按用途筛选</span><select id="prompt-category"><option value="">全部用途</option></select></label><label class="field"><span>搜索提示词</span><input id="prompt-filter" placeholder="如：评分、合并、前情"></label><button id="prompt-reset-all" class="ghost">全部恢复默认（保存后生效）</button></div>
+        <p class="hint">双花括号是程序自动填入的变量，保留名称即可，不用手填正文。可以修改语气、分析重点与约束；请保留输出 JSON 的字段名和结构，否则结果可能无法解析。</p>
+        <div id="prompt-list"></div>
+      </section>
+    </section>
+    <section class="card">
+      <h2>① 已检索作品</h2>
+      <p class="hint">之前索引过的范本都保存在本地,点击「使用」即可切换,无需重新选文件</p>
+      <div id="works-list" class="works"></div>
+    </section>
+
+    <section class="card">
+      <h2>② 上传新范本<span class="step-note">.txt / .epub</span></h2>
+      <p class="hint">上传后会自动加入上方列表,并设为当前作品;.epub 会自动抽取正文</p>
+      <div id="drop" class="drop">
+        <input type="file" id="file" accept=".txt,.epub,application/epub+zip" hidden>
+        <p>点击选择,或把 .txt / .epub 文件拖到这里</p>
+      </div>
+      <div id="upload-progress" class="progress hidden">
+        <div class="progress-bar"><div class="progress-fill" id="upload-bar"></div></div>
+        <div class="progress-text" id="upload-text"></div>
+        <button id="stop-index-btn" class="ghost danger hidden" type="button">停止向量化</button>
+        <div id="stop-index-error" class="progress-text" role="alert"></div>
+      </div>
+    </section>
+
+    <div id="draft-mode-content" class="hidden">
+      <p class="hint">先提供必要背景和原稿。分析模型会先确认对情节的理解,再主动找出最值得加强的薄弱描写,概括前后场景并生成范本检索需求。以下内容都会发送给原稿分析模型。</p>
+      <div class="draft-input-label">补充信息<span>可选 · 人物设定、世界背景、前情、当前章节目标等</span></div>
+      <textarea id="draft-supplement" rows="5" placeholder="例如：林澈是刚入职的调查员，对机构内部规则一无所知；这一段发生在他第一次进入总部时，希望突出制度带来的压迫感。"></textarea>
+      <div class="draft-input-label">原稿</div>
+      <textarea id="draft-input" rows="10" placeholder="粘贴原稿。不会描写的位置可以写成:【想法:这里想表现人物第一次进入陌生机构时的压迫感】"></textarea>
+      <div class="row">
+        <span id="draft-hint" class="hint"></span>
+        <div class="btn-group">
+          <button id="draft-new-btn" class="ghost hidden">新建分析</button>
+          <button id="draft-analyze-btn" class="primary">分析原稿并确认理解</button>
+        </div>
+      </div>
+      <div id="draft-progress" class="progress hidden">
+        <div class="progress-bar"><div class="progress-fill" id="draft-bar"></div></div>
+        <div class="progress-text" id="draft-progress-text"></div>
+      </div>
+      <div id="draft-workspace" class="draft-workspace hidden">
+        <div id="draft-understanding-panel" class="draft-panel hidden">
+          <div class="draft-section-title">分析模型的理解<span id="draft-understanding-state" class="draft-subtitle"></span></div>
+          <div id="draft-understanding" class="draft-understanding"></div>
+          <div id="draft-questions" class="draft-questions"></div>
+          <label class="draft-correction-label">补充或纠正分析模型的理解
+            <textarea id="draft-correction" rows="3" placeholder="如果它理解有误，或还有需要补充的信息，请写在这里。"></textarea>
+          </label>
+          <div class="row draft-understanding-actions">
+            <label class="draft-confirm-check"><input type="checkbox" id="draft-understanding-confirm"> 我确认以上理解无误</label>
+            <div class="btn-group">
+              <button id="draft-clarify-btn" class="ghost">提交回答或纠正</button>
+              <button id="draft-decompose-btn" class="primary" disabled>确认理解并诊断薄弱描写</button>
+            </div>
+          </div>
+        </div>
+        <div id="draft-decomposition-workspace" class="draft-decomposition-workspace hidden">
+        <div class="draft-panel">
+          <div class="draft-section-title">薄弱位置预览</div>
+          <div id="draft-preview" class="draft-preview"></div>
+        </div>
+        <details class="draft-panel">
+          <summary class="draft-section-title">高级检索设置<span class="draft-subtitle">默认快速检索，可切换精细或深度模式</span></summary>
+          <label class="param param-full">查询模式
+            <select id="draft-retrieval-mode">
+              <option value="fast">⚡ 快速检索</option>
+              <option value="refine">🎯 精细检索</option>
+              <option value="deep">🧭 深度迭代</option>
+            </select>
+          </label>
+          <div class="params" id="draft-fast-params">
+            <label class="param">召回段数<input type="number" id="draft-fast-recall" value="24" min="5" max="200"></label>
+            <label class="param">送 AI 段数<input type="number" id="draft-fast-rerank" value="8" min="3" max="50"></label>
+            <label class="param">输出段数<input type="number" id="draft-fast-topk" value="3" min="1" max="10"></label>
+          </div>
+          <div class="params hidden" id="draft-refine-params">
+            <label class="param">召回段数<input type="number" id="draft-refine-recall" value="50" min="5" max="200"></label>
+            <label class="param">迭代轮数<input type="number" id="draft-refine-rounds" value="2" min="1" max="5"></label>
+            <label class="param">每批片段数<input type="number" id="draft-refine-batch" value="5" min="2" max="10"></label>
+            <label class="param">输出段数<input type="number" id="draft-refine-topk" value="3" min="1" max="10"></label>
+            <label class="param">判断截断<input type="number" id="draft-refine-judge" value="400" min="100" max="2000"></label>
+          </div>
+          <div class="params hidden" id="draft-deep-params">
+            <label class="param">召回段数<input type="number" id="draft-deep-recall" value="50" min="5" max="200"></label>
+            <label class="param">每批片段数<input type="number" id="draft-deep-batch" value="5" min="2" max="10"></label>
+            <label class="param">输出段数<input type="number" id="draft-deep-topk" value="3" min="1" max="10"></label>
+            <label class="param">判断截断<input type="number" id="draft-deep-judge" value="400" min="100" max="2000"></label>
+            <label class="param">无改进后重试<input type="number" id="draft-deep-retry" value="1" min="0" max="10"></label>
+          </div>
+          <p id="draft-retrieval-hint" class="hint draft-retrieval-hint">快速检索会根据每处薄弱描写分别查询,批量时最多同时处理 3 处。</p>
+        </details>
+        <div class="draft-panel">
+          <div class="draft-section-title">薄弱描写诊断<span class="draft-subtitle">场景概括与丰富目标会自动成为检索依据</span></div>
+          <div id="draft-units" class="draft-units"></div>
+          <div class="row">
+            <span class="hint">最多同时处理 8 处,可取消不需要加强的位置</span>
+            <button id="draft-confirm-btn" class="primary">确认诊断并查询范本</button>
+          </div>
+        </div>
+        </div>
+        <div id="draft-chat-panel" class="draft-panel hidden">
+          <div class="draft-section-title">继续要求分析模型</div>
+          <div id="draft-events" class="draft-events"></div>
+          <textarea id="draft-chat-input" rows="3" placeholder="例如:第三处不要找环境描写,重新查一些只通过人物动作表现压迫感的片段"></textarea>
+          <div class="row">
+            <span class="hint">分析模型可以按新要求再次调用范本检索</span>
+            <button id="draft-chat-send" class="primary">发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="card">
+      <h2>③ 选择写作辅助方式</h2>
+      <div class="mode-switch">
+        <button id="mode-fast" class="mode-btn active">⚡ 快速检索</button>
+        <button id="mode-refine" class="mode-btn">🎯 精细检索</button>
+        <button id="mode-deep" class="mode-btn">🧭 深度迭代</button>
+        <button id="mode-draft" class="mode-btn">📝 原稿对照</button>
+      </div>
+      <div id="scene-mode-content">
+      <p class="hint">描述你想写的场景:人物、情绪、事件、环境、冲突等</p>
+      <textarea id="query" rows="3" placeholder="例如:雨夜,男主鼓起勇气向女主告白,却被对方沉默拒绝,心里又冷又痛"></textarea>
+      <div class="row query-optimize-actions">
+        <span class="hint">可选：让 AI 把原始要求整理成更适合混合检索的短语句</span>
+        <button id="optimize-query-btn" class="ghost">AI 优化检索内容</button>
+      </div>
+      <div id="query-optimize-box" class="query-optimize-box hidden">
+        <div class="query-optimize-head">
+          <span>实际送入向量与混合检索的内容（可以继续修改）</span>
+          <button id="use-original-query-btn" type="button" class="ghost">停用优化，改用原文</button>
+        </div>
+        <textarea id="optimized-query" rows="3"></textarea>
+        <div id="query-optimize-summary" class="hint"></div>
+        <div class="hint">最终 AI 判断仍以原始写作要求为准，优化内容只影响范本召回。</div>
+      </div>
+      <div class="params" id="fast-params">
+        <label class="param" title="向量初筛命中的段落数">召回段数
+          <input type="number" id="recallk" value="24" min="5" max="200">
+        </label>
+        <label class="param" title="重排后交给 LLM 精选的候选段数">送 AI 段数
+          <input type="number" id="rerankk" value="8" min="3" max="50">
+        </label>
+        <label class="param" title="最终展示的精选段数">输出段数
+          <input type="number" id="topk" value="3" min="1" max="10">
+        </label>
+      </div>
+      <div class="params hidden" id="refine-params">
+        <label class="param" title="每轮向量初筛命中的段落数">召回段数
+          <input type="number" id="r-recallk" value="50" min="5" max="200">
+        </label>
+        <label class="param" title="迭代轮数上限,越大越充分、越慢越贵">迭代轮数
+          <input type="number" id="rounds" value="2" min="1" max="5">
+        </label>
+        <label class="param" title="每批交给 LLM 打分的片段数">每批片段数
+          <input type="number" id="batchk" value="5" min="2" max="10">
+        </label>
+        <label class="param" title="最终展示的精选段数">输出段数
+          <input type="number" id="r-topk" value="3" min="1" max="10">
+        </label>
+        <label class="param" title="每段送入 LLM 判断的最大字符数,越小越省 token">判断截断
+          <input type="number" id="judgechars" value="400" min="100" max="2000">
+        </label>
+      </div>
+      <div class="params hidden" id="deep-params">
+        <label class="param" title="每轮向量初筛命中的段落数">召回段数
+          <input type="number" id="d-recallk" value="50" min="5" max="200">
+        </label>
+        <label class="param" title="每批交给 LLM 打分的片段数">每批片段数
+          <input type="number" id="d-batchk" value="5" min="2" max="10">
+        </label>
+        <label class="param" title="每轮展示/最终输出的精选段数">输出段数
+          <input type="number" id="d-topk" value="3" min="1" max="10">
+        </label>
+        <label class="param" title="每段送入 LLM 判断的最大字符数">判断截断
+          <input type="number" id="d-judgechars" value="400" min="100" max="2000">
+        </label>
+        <label class="param" title="点「AI 改写查询」时生成几个候选查询供你选">改写版本数
+          <input type="number" id="d-variants" value="3" min="1" max="5">
+        </label>
+        <label class="param" title="自动迭代:连续'无更好结果'多少轮后停止(0=第一次无改进即停)">无更好结果后重试次数
+          <input type="number" id="d-retry" value="1" min="0" max="10">
+        </label>
+      </div>
+      <div class="row">
+        <button id="expand-btn" class="ghost">AI 扩写(×3)</button>
+        <button id="search-btn" class="primary">快速检索</button>
+      </div>
+      <div class="row hidden" id="deep-actions">
+        <button id="deep-rewrite-btn" class="ghost">AI 改写查询</button>
+        <button id="deep-search-btn" class="primary">检索</button>
+        <button id="deep-auto-btn" class="ghost">自动迭代</button>
+        <button id="deep-stop-btn" class="ghost danger hidden">停止</button>
+      </div>
+      <div id="expand-box" class="expand-box hidden">
+        <div class="expand-head">选择或修改一个扩写版本(不选则检索时自动扩写):</div>
+        <div id="expand-versions"></div>
+      </div>
+      <div id="deep-query-box" class="expand-box hidden">
+        <div class="expand-head">改写查询如下,每条都带「用这条检索」按钮,直接点你要的那条即可(判断仍锚定原始需求):</div>
+        <div id="deep-versions"></div>
+      </div>
+      <div id="deep-history" class="deep-history hidden"></div>
+      <div id="search-progress" class="progress hidden">
+        <div class="progress-bar"><div class="progress-fill" id="search-bar"></div></div>
+        <div class="progress-text" id="search-text"></div>
+      </div>
+      <div id="search-hint" class="hint"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>④ 结果</h2>
+        <div class="btn-group"><button id="save-result-project" class="ghost" disabled>保存到创作项目</button><button id="export-btn" class="ghost" disabled>导出 Markdown</button></div>
+      </div>
+      <div id="hyde-note" class="hyde-note hidden">
+        <span class="hyde-label" id="hyde-label">🔍 扩写检索词:</span>
+        <span id="hyde-text"></span>
+      </div>
+      <div id="results" class="results empty">还没有结果。先选择/上传范本,再选择一种写作辅助方式开始。</div>
+    </section>
+
+    <section class="card">
+      <h2>⑤ 设置<span class="step-note">AI 端点</span></h2>
+      <p class="hint">四个 AI 组件统一按「模型 / 地址 / 密钥」配置，支持本地或远程服务。密钥按服务的鉴权要求填写，保存后即时生效。</p>
+      <p class="hint">如果分析或判断模型留空后调用报错，请将主 LLM 的「模型、地址、密钥」完整复制到这两组配置，保存后重试。若清空后内容自动出现，请检查浏览器自动填充；地址栏应为 http:// 或 https:// 开头的服务地址，不能填写模型名。</p>
+      <div class="settings-grid">
+        <div class="settings-group">
+          <div class="settings-group-title">主 LLM(精选 / 扩写)</div>
+          <label class="field">
+            <span>模型</span>
+            <input type="text" id="set-model" autocomplete="off" placeholder="deepseek-chat">
+          </label>
+          <label class="field">
+            <span>地址</span>
+            <input type="text" id="set-base" autocomplete="off" placeholder="https://api.deepseek.com">
+          </label>
+          <label class="field">
+            <span>密钥</span>
+            <input type="password" id="set-key" autocomplete="new-password" placeholder="sk-...">
+          </label>
+        </div>
+        <div class="settings-group">
+          <div class="settings-group-title">原稿分析模型(留空=复用主 LLM)</div>
+          <label class="field">
+            <span>模型</span>
+            <input type="text" id="set-analysis-model" autocomplete="off" placeholder="deepseek-chat">
+          </label>
+          <label class="field">
+            <span>地址</span>
+            <input type="text" id="set-analysis-base" autocomplete="off" placeholder="https://api.deepseek.com">
+          </label>
+          <label class="field">
+            <span>密钥(复用主地址时，留空复用主密钥)</span>
+            <input type="password" id="set-analysis-key" autocomplete="new-password" placeholder="sk-...">
+          </label>
+          <small id="set-analysis-resolved" class="hint"></small>
+          <label class="field">
+            <span>上下文长度(tokens，留空自动识别)</span>
+            <input type="number" id="set-analysis-context" min="16000" max="4000000" step="1000" placeholder="例如 1000000">
+          </label>
+          <small id="set-analysis-context-hint" class="hint">未知模型采用保守限制。</small>
+        </div>
+        <div class="settings-group">
+          <div class="settings-group-title">判断模型(相关性打分,留空=复用主 LLM)</div>
+          <label class="field">
+            <span>模型</span>
+            <input type="text" id="set-judge-model" autocomplete="off" placeholder="例如 qwen2.5:7b">
+          </label>
+          <label class="field">
+            <span>地址</span>
+            <input type="text" id="set-judge-base" autocomplete="off" placeholder="http://127.0.0.1:11434/v1">
+          </label>
+          <label class="field">
+            <span>密钥(本地免鉴权服务可留空)</span>
+            <input type="password" id="set-judge-key" autocomplete="new-password" placeholder="复用主地址或使用远程地址时，留空复用主密钥">
+          </label>
+          <small id="set-judge-resolved" class="hint"></small>
+        </div>
+        <div class="settings-group">
+          <div class="settings-group-title">Embedding(向量化)</div>
+          <p class="hint">BGE 等向量模型不限于 Ollama 部署。只要服务提供 OpenAI 兼容向量接口或 Ollama 原生接口，本地和远程都可接入。此配置用于范本索引和语义检索，聊天模型不能替代向量模型。</p>
+          <p class="hint">使用其他本地部署工具时，若其提供 OpenAI 兼容向量接口，请选择“OpenAI 兼容 Embedding API”；“OpenAI 兼容”指接口格式，不要求使用 OpenAI 的模型或云服务。</p>
+          <label class="field">
+            <span>接口类型</span>
+            <select id="set-embed-provider">
+              <option value="auto">按地址推断（不确定时请手动选择）</option>
+              <option value="openai">OpenAI 兼容 Embedding API（本地 / 远程）</option>
+              <option value="ollama">Ollama 原生接口（本地 / 远程）</option>
+            </select>
+          </label>
+          <p class="hint">自动模式：/v1 或 /embeddings 结尾使用兼容接口；/api/embed 结尾或无路径的 11434 端口使用 Ollama，其余使用兼容接口。非默认端口的 Ollama 请手动选择。地址请填写服务提供的 API 基础地址（含所需的 /v1 等路径），也可填写完整向量接口地址。</p>
+          <label class="field">
+            <span>模型</span>
+            <input type="text" id="set-embed-model" autocomplete="off" placeholder="bge-m3">
+          </label>
+          <label class="field">
+            <span>地址</span>
+            <input type="text" id="set-embed-base" autocomplete="off" placeholder="例如 http://127.0.0.1:8000/v1 或 https://服务地址/v1">
+          </label>
+          <label class="field">
+            <span>密钥(服务无需鉴权时可留空)</span>
+            <input type="password" id="set-embed-key" autocomplete="new-password" placeholder="按向量服务要求填写，本地和远程均适用">
+          </label>
+        </div>
+      </div>
+      <div class="row">
+        <span id="settings-hint" class="hint"></span>
+        <button id="save-settings" class="ghost">保存设置</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="knowledge-detail-dialog" class="knowledge-detail-dialog" aria-labelledby="knowledge-detail-title">
+    <div class="knowledge-detail-shell">
+      <div class="knowledge-detail-header">
+        <div>
+          <h2 id="knowledge-detail-title">知识卡片详情</h2>
+          <p class="hint">在这里查看完整依据并编辑卡片；关闭后返回统一尺寸的浏览列表。</p>
+        </div>
+        <button id="close-knowledge-detail" class="ghost" type="button">关闭</button>
+      </div>
+      <div id="knowledge-detail-content" class="knowledge-detail-content"></div>
+    </div>
+  </dialog>
+
+  <section id="knowledge-graph-overlay" class="knowledge-graph-overlay hidden" aria-label="知识卡片可视化编辑" aria-modal="true" role="dialog">
+    <header class="knowledge-graph-header">
+      <div><strong>知识卡片可视化编辑</strong><span id="knowledge-graph-project" class="hint"></span></div>
+      <label class="knowledge-graph-search"><span class="sr-only">搜索知识卡片</span><input id="knowledge-graph-search" type="search" placeholder="搜索标题、内容、原文依据……" autocomplete="off"></label>
+      <div class="knowledge-graph-actions">
+        <button id="knowledge-graph-undo" class="ghost" disabled>撤销</button>
+        <button id="knowledge-graph-arrange-type" class="ghost">按类型整理未关联</button>
+        <button id="knowledge-graph-arrange-relations" class="ghost">AI 智能排布</button>
+        <button id="knowledge-graph-manage-relation-layouts" class="ghost">关系排布设置</button>
+        <button id="knowledge-graph-toggle-edges" class="ghost">显示全部关联</button>
+        <button id="knowledge-graph-overview" class="ghost hidden">返回总览</button>
+        <button id="knowledge-graph-save-view" class="ghost hidden">保存当前布局</button>
+        <button id="knowledge-graph-fit" class="ghost">适应画布</button>
+        <button id="knowledge-graph-zoom-out" class="ghost" aria-label="缩小">－</button>
+        <span id="knowledge-graph-zoom">100%</span>
+        <button id="knowledge-graph-zoom-in" class="ghost" aria-label="放大">＋</button>
+        <button id="close-knowledge-graph" class="ghost">关闭</button>
+      </div>
+    </header>
+    <div id="knowledge-graph-types" class="knowledge-graph-types" aria-label="卡片类型筛选"></div>
+    <div class="knowledge-graph-main">
+      <aside class="knowledge-segment-rail" aria-label="剧情分段">
+        <div class="knowledge-segment-rail-title"><strong>剧情分段</strong></div>
+        <button id="knowledge-segment-create" class="ghost knowledge-segment-create">＋ 新建分段</button>
+        <div class="knowledge-segment-scroll">
+          <button id="knowledge-segment-overview" class="knowledge-segment-item active" data-segment-id="">全书总览</button>
+          <div id="knowledge-segment-list"></div>
+          <button id="knowledge-segment-add-card" class="ghost hidden">＋ 加入卡片</button>
+          <button id="knowledge-segment-remove-selected" class="ghost hidden">移出已选卡片</button>
+          <p id="knowledge-segment-hint" class="hint">新建剧情段后，每段只保存自己的显示成员和位置。</p>
+        </div>
+      </aside>
+      <div id="knowledge-graph-viewport" class="knowledge-graph-viewport">
+        <div id="knowledge-graph-world" class="knowledge-graph-world">
+          <svg id="knowledge-graph-edges" class="knowledge-graph-edges" aria-hidden="true"></svg>
+          <div id="knowledge-graph-nodes" class="knowledge-graph-nodes"></div>
+        </div>
+        <div id="knowledge-graph-marquee" class="knowledge-graph-marquee hidden"></div>
+        <div id="knowledge-graph-empty" class="knowledge-graph-empty hidden">没有符合搜索和筛选条件的知识卡片。</div>
+      </div>
+      <aside id="knowledge-graph-sidebar" class="knowledge-graph-sidebar hidden"></aside>
+    </div>
+    <div class="knowledge-graph-footer">
+      <div class="knowledge-graph-modes">
+        <button class="ghost knowledge-graph-mode" data-graph-mode="move">移动模式</button>
+        <button class="ghost knowledge-graph-mode" data-graph-mode="merge">合并模式</button>
+        <button class="ghost knowledge-graph-mode" data-graph-mode="relation">关联模式</button>
+      </div>
+      <p id="knowledge-graph-status" class="hint">浏览模式：悬停预览，点击卡片展开完整内容；拖动空白区域平移画布。</p>
+      <button id="knowledge-graph-merge-confirm" class="primary hidden" disabled>生成合并草稿（0）</button>
+    </div>
+    <div id="knowledge-graph-context-menu" class="knowledge-graph-context-menu hidden" role="menu" aria-label="画布快捷操作"></div>
+    <div id="knowledge-graph-relation-dialog" class="knowledge-graph-relation-dialog hidden" role="dialog" aria-modal="true">
+      <div class="card">
+        <h3 id="knowledge-graph-relation-title">建立关联</h3>
+        <p id="knowledge-graph-relation-direction" class="hint"></p>
+        <label class="field"><span>关系名称</span><input id="knowledge-graph-relation-label" maxlength="80" placeholder="例如：拥有、隶属于、敌对、发生于"></label>
+        <label class="field"><span>自动排布时如何理解这类关系</span><select id="knowledge-graph-relation-layout"></select></label>
+        <p id="knowledge-graph-relation-layout-hint" class="hint">同名关系会共用这个规则，以后仍可修改。</p>
+        <div class="row relation-time-row">
+          <label class="field"><span>建立于（可选）</span><select id="knowledge-graph-relation-valid-from"><option value="">未指定，默认长期存在</option></select></label>
+          <label class="field"><span>从哪一章起失效（可选）</span><select id="knowledge-graph-relation-invalid-from"><option value="">尚未失效，持续有效</option></select></label>
+        </div>
+        <p class="hint">不选择章节时，关系默认长期有效。关系发生变化后，只需填写“从哪一章起失效”，历史关系仍会保留。</p>
+        <div id="knowledge-graph-relation-label-library" class="relation-label-library"></div>
+        <div class="row"><button id="knowledge-graph-relation-save" class="primary">保存关系</button><button id="knowledge-graph-relation-reverse" class="ghost">交换方向</button><button id="knowledge-graph-relation-delete" class="ghost danger hidden">删除关系</button><button id="knowledge-graph-relation-cancel" class="ghost">取消</button></div>
+        <p id="knowledge-graph-relation-error" class="hint"></p>
+      </div>
+    </div>
+    <div id="knowledge-graph-relation-layout-dialog" class="knowledge-graph-relation-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="knowledge-graph-relation-layout-title">
+      <div class="card relation-layout-manager-card">
+        <div class="card-head"><div><h3 id="knowledge-graph-relation-layout-title">关系排布设置</h3><p class="hint">拖动关系名称到合适的规则；也可以先点关系名称，再点规则区域。保存后，“AI 智能排布”会把这些规则和卡片内容一起交给模型理解。</p></div><button id="knowledge-graph-relation-layout-close" class="ghost" type="button">关闭</button></div>
+        <div id="knowledge-graph-relation-layout-rules" class="relation-layout-rules"></div>
+        <p id="knowledge-graph-relation-layout-status" class="hint"></p>
+        <div class="row"><button id="knowledge-graph-relation-layout-save" class="primary" type="button">保存排布设置</button><button id="knowledge-graph-relation-layout-cancel" class="ghost" type="button">取消</button></div>
+      </div>
+    </div>
+  </section>
+
+  <aside id="knowledge-ai-run-drawer" class="ai-run-drawer hidden" role="dialog" aria-modal="false" aria-label="AI运行记录">
+    <div class="ai-run-head">
+      <div><h2>AI 运行记录</h2><p class="hint">查看模型收到的内容、原始回复、工具查询和程序校验结果。记录保存在当前小说本地。</p></div>
+      <button id="close-knowledge-ai-runs" class="ghost" type="button">关闭</button>
+    </div>
+    <div class="ai-run-toolbar">
+      <label class="field"><span>运行记录</span><select id="knowledge-ai-run-select"></select></label>
+      <button id="refresh-knowledge-ai-run" class="ghost" type="button">刷新</button>
+      <div class="ai-run-view-switch" role="group" aria-label="记录详细程度">
+        <button class="ghost" data-ai-run-view="summary" type="button">摘要</button>
+        <button class="ghost active" data-ai-run-view="details" type="button">详细</button>
+        <button class="ghost" data-ai-run-view="raw" type="button">原始数据</button>
+      </div>
+    </div>
+    <div id="knowledge-ai-run-meta" class="ai-run-meta hint">选择小说后可查看记录。</div>
+    <div id="knowledge-ai-run-events" class="ai-run-events"></div>
+  </aside>
+
+  <aside id="onboarding-panel" role="region" aria-labelledby="onboarding-title" hidden>
+    <div class="onboarding-heading"><span id="onboarding-progress"></span><button id="onboarding-skip" type="button" class="ghost">暂时跳过</button></div>
+    <div aria-live="polite"><h2 id="onboarding-title"></h2><p id="onboarding-text"></p></div>
+    <div class="onboarding-actions"><button id="onboarding-back" type="button" class="ghost">上一步</button><button id="onboarding-next" type="button" class="primary">下一步</button></div>
+  </aside>
+  <footer>本地向量检索 + AI 扩写与技法拆解</footer>
+  <script src="/static/app.js"></script>
+  <script src="/static/tag_periods.js"></script>
+  <script src="/static/workspace.js"></script>
+  <script src="/static/clues.js"></script>
+  <script src="/static/knowledge_graph.js"></script>
+  <script src="/static/prompts.js"></script>
+  <script src="/static/onboarding.js"></script>
+</body>
+</html>

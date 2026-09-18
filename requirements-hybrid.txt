@@ -1,0 +1,2 @@
+# Optional GPU reranking. Install a CUDA-compatible PyTorch separately.
+FlagEmbedding==1.4.2

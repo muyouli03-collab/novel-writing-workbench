@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "novel-knowledge": {
+      "command": "C:/path/to/novel-writing-workbench/.venv-mcp/Scripts/python.exe",
+      "args": [
+        "-X",
+        "utf8",
+        "C:/path/to/novel-writing-workbench/novel_mcp.py",
+        "--api-url",
+        "http://127.0.0.1:8000"
+      ]
+    }
+  }
+}
